@@ -1,5 +1,7 @@
 Multimodal Visual Persuasion Analysis Agent 🧠👁️
+
 This project utilizes Multimodal Large Language Models (GPT-4o) to simulate how different human personas perceive visual persuasion strategies in advertising.
+
 
 By simulating diverse psychological profiles (e.g., "The Skeptic", "The Trendsetter"), the agent analyzes image pairs to determine which is more persuasive, provides detailed rationales, and estimates annotation difficulty.
 
@@ -13,19 +15,22 @@ run_fast.py: 🚀 Recommended. Uses parallel processing for high-speed analysis.
 run_pvp_slow.py: 🐢 Stable Mode. Sequential processing with real-time visualization of the reasoning process.
 
 Set env
+
 Put you OPENAI_API_KEY in it.
 
 
 🚀 How to Run
+
 Step 1: Run the Experiment
 You have two options for running the analysis.
 
 ⚡ Option A: High-Speed Mode (Recommended)
+
 Use this script for the fastest results. It runs multiple analysis tasks in parallel.
 
-Bash
 
 python run_fast.py
+
 Pros: Very fast (5x-10x speed). Uses a progress bar.
 
 Cons: May hit rate limits on lower-tier OpenAI accounts.
@@ -35,9 +40,10 @@ Output: results/final_visual_report.html
 🐢 Option B: Visual/Stable Mode
 Use this script if you want to watch the model's "thought process" in real-time or if you encounter Rate Limit errors with the fast script.
 
-Bash
+
 
 python run_pvp_slow.py
+
 Pros: Fully Visual Process. It prints the persona, choice, and reasoning for every single step to the console as it happens. 100% stable (no crashes).
 
 Cons: Slower (analyzes one by one).
