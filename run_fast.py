@@ -60,12 +60,16 @@ def analyze_pair_sequential(idx, strategy, img_a_path, img_b_path, persona):
         f"Bias: {persona['bias']}. Adopt this persona completely."
     )
 
+    # UPDATED PROMPT: Explicitly defining difficulty levels for the AI
     user_prompt = (
         f"Context: Strategy '{strategy}'. Compare Image A and B.\n"
         f"1. Which is more persuasive to YOU?\n"
         f"2. Why? (Rationale)\n"
-        f"3. Mental Sim: Rank difficulty of [A vs B], [A vs C (Weak)], [B vs C].\n"
-        f"Output JSON: {{ \"chosen_image\": \"A\", \"rationale\": \"...\", \"difficulty_ranking\": [], \"difficulty_reason\": \"...\" }}"
+        f"3. Mental Sim: Rank difficulty of the choice [A vs B]. Use these definitions:\n"
+        f"   - 'Easy': One image is obviously better suited to my bias.\n"
+        f"   - 'Medium': Both have merit, but one is slightly better.\n"
+        f"   - 'Hard': A toss-up; both are good or both are bad, requiring complex trade-offs.\n"
+        f"Output JSON: {{ \"chosen_image\": \"A\", \"rationale\": \"...\", \"difficulty_ranking\": \"Easy/Medium/Hard\", \"difficulty_reason\": \"Explain clearly why it was Easy, Medium, or Hard.\" }}"
     )
 
     # Retry Logic (Up to 5 times)
@@ -127,14 +131,37 @@ def analyze_pair_sequential(idx, strategy, img_a_path, img_b_path, persona):
     return None
 
 def generate_html_report(results, pairs):
+    # UPDATED HTML: Added CSS for Legend and the Legend HTML block
     html = """<html><head><style>
-    body{font-family:sans-serif;padding:20px;background:#f4f4f4}
-    .pair{background:white;padding:20px;margin-bottom:20px;border-radius:8px}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    td,th{border:1px solid #ddd;padding:8px}
-    th{background:#eee}
-    .choice-A{color:green;font-weight:bold} .choice-B{color:blue;font-weight:bold}
-    </style></head><body><h1>Final Analysis Report</h1>"""
+    body{font-family:sans-serif;padding:20px;background:#f4f4f4; color:#333;}
+    .container { max-width: 1000px; margin: 0 auto; }
+    .legend { background: #e8f4f8; padding: 15px; border-left: 5px solid #2980b9; margin-bottom: 25px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .legend h3 { margin-top: 0; color: #2980b9; }
+    .legend ul { margin-bottom: 0; padding-left: 20px; }
+    .legend li { margin-bottom: 5px; }
+    .pair{background:white;padding:25px;margin-bottom:30px;border-radius:8px;box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
+    table{width:100%;border-collapse:collapse;margin-top:15px; font-size: 14px;}
+    td,th{border:1px solid #ddd;padding:10px; vertical-align: top;}
+    th{background:#eee; text-align: left;}
+    .choice-A{color:#27ae60;font-weight:bold} 
+    .choice-B{color:#2980b9;font-weight:bold}
+    .diff-col { width: 15%; }
+    .reason-col { width: 30%; color: #555; font-style: italic; }
+    </style></head><body>
+    
+    <div class="container">
+        <h1>Final Analysis Report</h1>
+        
+        <div class="legend">
+            <h3>Difficulty Rating Key</h3>
+            <p>The AI ranked the difficulty of making the choice based on the following criteria:</p>
+            <ul>
+                <li><b>Easy:</b> The winner was obvious. One image strongly aligned with the persona's bias, while the other did not.</li>
+                <li><b>Medium:</b> A nuanced decision. Both images had merits, but one had a slight edge requiring some deliberation.</li>
+                <li><b>Hard:</b> A "Toss-up." The images were either very similar, or presented a complex trade-off where neither perfectly fit the persona.</li>
+            </ul>
+        </div>
+    """
     
     # Group results by Pair ID
     results.sort(key=lambda x: (x["Pair_ID"], x["Persona_ID"]))
@@ -148,16 +175,23 @@ def generate_html_report(results, pairs):
         img_b = f"../{pairs[pair_id]['B']}"
         
         html += f"<div class='pair'><h2>Pair {pair_id}: {strategy}</h2>"
-        html += f"<div style='display:flex;gap:20px'><div style='text-align:center'><b>Image A</b><br><img src='{img_a}' height='200'></div>"
-        html += f"<div style='text-align:center'><b>Image B</b><br><img src='{img_b}' height='200'></div></div>"
-        html += "<table><tr><th>Persona</th><th>Choice</th><th>Rationale</th></tr>"
+        html += f"<div style='display:flex;gap:20px;margin-bottom:15px'><div style='text-align:center;flex:1'><b>Image A</b><br><img src='{img_a}' style='max-width:100%;height:200px;object-fit:contain'></div>"
+        html += f"<div style='text-align:center;flex:1'><b>Image B</b><br><img src='{img_b}' style='max-width:100%;height:200px;object-fit:contain'></div></div>"
+        
+        html += "<table><tr><th>Persona</th><th>Choice</th><th>Rationale</th><th class='diff-col'>Difficulty</th><th class='reason-col'>Difficulty Reason</th></tr>"
         
         for res in pair_res:
             c_class = "choice-A" if res.get("Choice") == "A" else "choice-B"
-            html += f"<tr><td>{res['Persona_ID']}</td><td class='{c_class}'>{res.get('Choice')}</td><td>{res.get('Rationale')}</td></tr>"
+            html += f"<tr>"
+            html += f"<td><b>{res['Persona_ID']}</b></td>"
+            html += f"<td class='{c_class}'>{res.get('Choice')}</td>"
+            html += f"<td>{res.get('Rationale')}</td>"
+            html += f"<td>{res.get('Difficulty_Ranking')}</td>"
+            html += f"<td class='reason-col'>{res.get('Difficulty_Reasoning')}</td>"
+            html += "</tr>"
         html += "</table></div>"
     
-    html += "</body></html>"
+    html += "</div></body></html>"
     with open(OUTPUT_HTML, "w", encoding="utf-8") as f:
         f.write(html)
     print(f"\n✨ Visual Report generated: {OUTPUT_HTML}")
